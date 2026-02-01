@@ -43,6 +43,20 @@ class MailClient:
         except Exception as e:
             logging.error(f"Failed to send email: {e}")
             return False
+
+    def send_notification(self, recipient_email, subject, body):
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = self.user_email
+            msg['To'] = recipient_email
+            msg['Subject'] = subject
+            msg.attach(MIMEText(body, 'plain'))
+            self._send_email(msg)
+            logging.info("Successfully sent notification email")
+            return True
+        except Exception as e:
+            logging.error(f"Failed to send notification: {e}")
+            return False
     
     def _prepare_email(self, recipient_email, job_data, email_body, attachments):
         position = job_data.get('title')
