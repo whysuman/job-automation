@@ -70,8 +70,16 @@ def load_json_file(file_path):
     if not file.exists():
         logging.warning(f"File {file_path} does not exist")
         return {}
-    
-    return json.loads(file.read_bytes())
+
+    contents = file.read_text(encoding="utf-8").strip()
+    if not contents:
+        return {}
+
+    try:
+        return json.loads(contents)
+    except json.JSONDecodeError as exc:
+        logging.error(f"Invalid JSON in {file_path}: {exc}")
+        return {}
 
 def write_json_file(file_path, data):
     file = Path(file_path)
