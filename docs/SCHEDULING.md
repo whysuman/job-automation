@@ -2,6 +2,15 @@
 
 This document provides setup guides for running the job application automation project continuously on macOS, Windows, and Linux. Follow the instructions based on your operating system to ensure your automation runs 24/7.
 
+## Before Scheduling
+
+1. Confirm your `.env` has `EMAIL_ADDRESS` and `EMAIL_APP_PASSWORD` set so notification emails can be sent.
+2. Ensure `config/run_config.json` uses `source: "ufl"` and `mode: "notify"` for UF notifications.
+3. Validate a manual run works:
+   ```bash
+   uv run main.py --first_name "YourName" --notify_email "you@example.com"
+   ```
+
 ---
 
 ## macOS Setup
@@ -28,7 +37,9 @@ To set up your job automation to run in the background on macOS:
        <string>com.user.jobautomation</string>
        <key>ProgramArguments</key>
        <array>
-           <string>/path/to/your/seek-automation</string>
+           <string>/bin/zsh</string>
+           <string>-lc</string>
+           <string>cd /path/to/your/job-automation && uv run main.py --first_name "YourName" --notify_email "you@example.com"</string>
        </array>
        <key>RunAtLoad</key>
        <true/>
@@ -73,7 +84,10 @@ For setting up your job automation to run on Windows:
 2. Choose the **Trigger** (e.g., Daily) and click **Next**.
 3. Set the start time and recurrence based on your preference and click **Next**.
 4. Select **Start a program** and click **Next**.
-5. Browse for your script and click **Next**, then **Finish**.
+5. Browse for your program and click **Next**, then **Finish**.
+   - Program/script: `uv`
+   - Add arguments: `run main.py --first_name "YourName" --notify_email "you@example.com"`
+   - Start in: `C:\path\to\job-automation`
 
 ### 2. Set the `dateRange`
 
@@ -100,9 +114,9 @@ For running your job automation on Linux:
 
 #### Step 2: Add a Cron Job
 
-1. Add the following line to schedule your script (this example runs the script every day at midnight):
+1. Add the following line to schedule your script (this example runs every hour):
    ```
-   0 0 * * * /path/to/your/seek-automation
+   0 * * * * cd /path/to/your/job-automation && /usr/bin/env uv run main.py --first_name "YourName" --notify_email "you@example.com"
    ```
 
 2. Save and exit the editor (typically Ctrl + X, then Y, then Enter).

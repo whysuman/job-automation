@@ -78,6 +78,11 @@ Run with notifications (defaults to EMAIL_ADDRESS if `--notify_email` is omitted
 uv run main.py --first_name "YourName" --notify_email "you@example.com"
 ```
 
+## How to confirm it is working (UF notifications)
+- You should receive a notification email for any new job ID found by the UF filter.
+- New job IDs are recorded in `application_pipeline/application_materials/applied.json` to prevent duplicates.
+- Logs will show `Scraping UF job listings...` followed by notification actions.
+
 ## Customisation
 **Edit config/run_config.json to customise searches**:
  - `searchTerms`: Job titles to search
