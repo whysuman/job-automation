@@ -1,15 +1,20 @@
 {
-    "searchTerms": [
-        "Junior Software Engineer",
-        "Software Engineer",
-        "Software Developer",
-        "Junior Software Developer",
-        "Entry Level Software Developer"
-    ],
-    "maxResults": 550,
-    "SortBy": "KeywordsRelevance",
-    "suburbOrCity": "Sydney",
-    "state": "NSW",
-    "dateRange": 31,
-    "requireEmail": false
+    "source": "ufl",
+    "mode": "notify",
+    "base_url": "https://explore.jobs.ufl.edu/en-us/filter/",
+    "filters": {
+        "search_keyword": "",
+        "work_types": [
+            "staff part-time",
+            "student ast",
+            "temp part-time"
+        ],
+        "categories": [
+            "student services"
+        ],
+        "locations": [
+            "main campus (gainesville fl)"
+        ],
+        "job_mail_subscribe_privacy": "agree"
+    }
 }

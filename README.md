@@ -1,10 +1,10 @@
 # Automated Seek Job Search
 
-This project automates the process of applying for jobs by scraping job listings, generating customised cover letters and emails, and sending applications with attachments such as resumes and cover letters.
+This project automates the process of applying for jobs by scraping job listings, generating customised cover letters and emails, and sending applications with attachments such as resumes and cover letters. It also supports UF listings for notification-only workflows.
 
 ## Features
 
-- **Job Scraping**: Uses the Apify Seek Job Scraper to fetch job listings based on search terms.
+- **Job Scraping**: Uses the Apify Seek Job Scraper to fetch job listings based on search terms. UF listings use direct scraping of the UF job board filter page.
 - **AI-Generated Cover Letters**: Customises cover letters using LLM (MetaAI), ensuring proper Australian formatting.
 - **Automated Applications via Seek**: Automated login via email code & application to jobs directly on Seek.
 - **Email Automation**: Sends job applications with attached resumes and cover letters to recruiters via Gmail.
@@ -13,7 +13,7 @@ This project automates the process of applying for jobs by scraping job listings
 
 ## Setup Requirements
 
-1. **Apify API Key**  
+1. **Apify API Key** (Seek only)  
    - Create an [Apify account](https://console.apify.com/) and obtain an [API key](https://console.apify.com/settings/integrations) for the Seek Job Scraper.
    - Store the API key in an `.env` file as `APIFY_KEY`.
 
@@ -21,7 +21,7 @@ This project automates the process of applying for jobs by scraping job listings
    - Generate an App Password in your mail Account settings for your mail account.
    - Store the mail account & app password in the `.env` file as `EMAIL_ADDRESS` & `EMAIL_APP_PASSWORD`.
 
-3. **Resume Preparation**  
+3. **Resume Preparation** (Seek only)  
    - Create the following files:
      - `application_pipeline/application_materials/resume.pdf`: A PDF version of your resume, attached to job applications.
 
@@ -54,6 +54,35 @@ This project automates the process of applying for jobs by scraping job listings
     uv run main.py
    ```
 
+## UF Job Alert Workflow
+UF listings are configured via `config/run_config.json` with `source: "ufl"` and `mode: "notify"`. This mode sends notification emails for newly discovered job IDs and records them in `application_pipeline/application_materials/applied.json`.
+
+Example UF config:
+```json
+{
+  "source": "ufl",
+  "mode": "notify",
+  "base_url": "https://explore.jobs.ufl.edu/en-us/filter/",
+  "filters": {
+    "search_keyword": "",
+    "work_types": ["staff part-time", "student ast", "temp part-time"],
+    "categories": ["student services"],
+    "locations": ["main campus (gainesville fl)"],
+    "job_mail_subscribe_privacy": "agree"
+  }
+}
+```
+
+Run with notifications (defaults to EMAIL_ADDRESS if `--notify_email` is omitted):
+```bash
+uv run main.py --first_name "YourName" --notify_email "you@example.com"
+```
+
+## How to confirm it is working (UF notifications)
+- You should receive a notification email for any new job ID found by the UF filter.
+- New job IDs are recorded in `application_pipeline/application_materials/applied.json` to prevent duplicates.
+- Logs will show `Scraping UF job listings...` followed by notification actions.
+
 ## Customisation
 **Edit config/run_config.json to customise searches**:
  - `searchTerms`: Job titles to search
@@ -79,6 +108,7 @@ This project automates the process of applying for jobs by scraping job listings
 
 ## Notes
  - Currently only supports seek login via email code
+ - UF listings are notification-only and do not auto-apply.
  - Ensure your mail account has secure app access enabled or app-specific passwords configured.
  - Applications are tracked in `application_pipeline/application_materials/applied.json` to avoid sending duplicates.
  - Using other llms official APIs such as Openai or Claude would likely improve performance such as speed & higher quality responses.
