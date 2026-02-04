@@ -77,17 +77,39 @@ class JobScraper:
 
     def _parse_ufl_listings(self, html_text):
         jobs = []
+        seen_links = set()
         for match in re.finditer(r'<a[^>]+href="(?P<link>[^"]+)"[^>]*>(?P<title>[^<]+)</a>', html_text):
             link = match.group("link")
             title = match.group("title").strip()
             if "/en-us/job/" not in link:
                 continue
             job_id = link.rstrip("/").split("/")[-1]
+            job_link = f"https://explore.jobs.ufl.edu{link}"
+            if job_link in seen_links:
+                continue
+            seen_links.add(job_link)
             jobs.append(
                 {
                     "id": job_id,
                     "title": title,
-                    "jobLink": f"https://explore.jobs.ufl.edu{link}",
+                    "jobLink": job_link,
+                    "location": "",
+                    "category": "",
+                    "work_type": "",
+                }
+            )
+        for match in re.finditer(r'"jobLink":"(?P<link>/en-us/job/[^"]+)"', html_text):
+            link = match.group("link")
+            job_id = link.rstrip("/").split("/")[-1]
+            job_link = f"https://explore.jobs.ufl.edu{link}"
+            if job_link in seen_links:
+                continue
+            seen_links.add(job_link)
+            jobs.append(
+                {
+                    "id": job_id,
+                    "title": "",
+                    "jobLink": job_link,
                     "location": "",
                     "category": "",
                     "work_type": "",
