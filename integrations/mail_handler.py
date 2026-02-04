@@ -43,6 +43,20 @@ class MailClient:
         except Exception as e:
             logging.error(f"Failed to send email: {e}")
             return False
+
+    def send_notification(self, recipient_email, subject, body):
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = self.user_email
+            msg['To'] = recipient_email
+            msg['Subject'] = subject
+            msg.attach(MIMEText(body, 'plain'))
+            self._send_email(msg)
+            logging.info("Successfully sent notification email")
+            return True
+        except Exception as e:
+            logging.error(f"Failed to send notification: {e}")
+            return False
     
     def _prepare_email(self, recipient_email, job_data, email_body, attachments):
         position = job_data.get('title')
@@ -81,10 +95,10 @@ class MailClient:
             server.login(self.user_email, self.app_password)
             server.send_message(msg)
     
-    def parse_code(self, subject):
-        match = re.search(r"\b\d{6}\b", subject)
+    def parse_code(self, text):
+        match = re.search(r"\b\d{6}\b", text)
         if not match:
-            raise RuntimeError(f"Error parsing code from subject: '{subject}'")
+            raise RuntimeError(f"Error parsing code from text.")
 
         return match.group(0)
 
@@ -95,8 +109,24 @@ class MailClient:
         if isinstance(subject, bytes):
             subject = subject.decode(encoding or 'utf-8')
 
-        code = self.parse_code(subject)
-        return code
+        try:
+            return self.parse_code(subject)
+        except RuntimeError:
+            body = self._extract_body(msg)
+            return self.parse_code(body)
+
+    def _extract_body(self, msg):
+        if msg.is_multipart():
+            for part in msg.walk():
+                content_type = part.get_content_type()
+                if content_type == "text/plain":
+                    charset = part.get_content_charset() or "utf-8"
+                    return part.get_payload(decode=True).decode(charset, errors="replace")
+        charset = msg.get_content_charset() or "utf-8"
+        payload = msg.get_payload(decode=True)
+        if payload:
+            return payload.decode(charset, errors="replace")
+        return ""
     
     def fetch_last_email(self, from_):
         with imaplib.IMAP4_SSL(f"imap.{self.mail_protocol}") as mail:

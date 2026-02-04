@@ -18,11 +18,17 @@ class ApplicationPipeline:
     def __init__(self, run_config, args):
         self.scraper = JobScraper(run_config)
         self.args = args
-        self.agent = AIAgent(args.first_name, args.model).agent
+        self.source = run_config.get("source", "seek")
+        self.mode = run_config.get("mode", "apply")
+        self.agent = None
         self.mail_client = MailClient(args.mail_protocol)
         self.applied = self._load_applied(args.applied_path)
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')
-        self.encoded_resume_txt = self.model.encode(self.args.resume_txt, convert_to_numpy=True)
+        self.model = None
+        self.encoded_resume_txt = None
+        if self.source != "ufl":
+            self.agent = AIAgent(args.first_name, args.model).agent
+            self.model = SentenceTransformer('all-MiniLM-L6-v2')
+            self.encoded_resume_txt = self.model.encode(self.args.resume_txt, convert_to_numpy=True)
 
     def _load_applied(self, path):
         applied = load_json_file(path)
@@ -32,6 +38,8 @@ class ApplicationPipeline:
         return applied
 
     def calculate_resume_jd_similarity(self, jd_text):
+        if not self.model or not self.encoded_resume_txt:
+            return 0.0
         jd_vector = self.model.encode(jd_text, convert_to_numpy=True)
         sim_score = 1 - cosine(self.encoded_resume_txt, jd_vector)
 
@@ -47,6 +55,9 @@ class ApplicationPipeline:
         return False
 
     async def run(self):
+        if self.source == "ufl":
+            await self._run_ufl_notifications()
+            return
         logging.info("Scraping job listings...")
         data = await self.scraper.scrape("websift/seek-job-scraper")
         with SeekClient(self.mail_client) as seek_client:
@@ -137,3 +148,46 @@ class ApplicationPipeline:
                     if not self.args.use_openai:
                         logging.info('sleeping')
                         time.sleep(30)
+
+    async def _run_ufl_notifications(self):
+        logging.info("Scraping UF job listings...")
+        jobs = await self.scraper.scrape()
+        if not jobs:
+            logging.info("No jobs found for UF listing, exiting.")
+            return
+
+        notification_email = self.args.notify_email
+        if not notification_email:
+            notification_email = self.mail_client.user_email
+
+        for job in jobs:
+            job_id = job.get("id")
+            if not job_id:
+                continue
+            if job_id in self.applied["jobs"]:
+                logging.info(f"Already notified for job {job_id}, skipping.")
+                continue
+
+            subject = f"New UF job opening: {job.get('title', 'Unknown role')}"
+            body_lines = [
+                f"Title: {job.get('title', 'Unknown')}",
+                f"Job ID: {job_id}",
+                f"Location: {job.get('location', 'Not listed')}",
+                f"Category: {job.get('category', 'Not listed')}",
+                f"Work type: {job.get('work_type', 'Not listed')}",
+                f"Link: {job.get('jobLink', '')}",
+            ]
+            body = "\n".join(body_lines)
+
+            success = self.mail_client.send_notification(notification_email, subject, body)
+            if not success:
+                logging.error(f"Failed to send notification for job {job_id}")
+                continue
+
+            self.applied["jobs"][job_id] = {
+                "notified_on": datetime.now().isoformat(),
+                "position": job.get("title", ""),
+                "link": job.get("jobLink", ""),
+                "source": "ufl",
+            }
+            write_json_file(self.args.applied_path, self.applied)

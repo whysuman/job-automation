@@ -33,6 +33,11 @@ def add_args():
                         help='Mail protocol e.g gmail.com, outlook.com',
                         default="gmail.com")
 
+    parser.add_argument('--notify_email',
+                        type=str,
+                        help='Email address for job notifications (defaults to EMAIL_ADDRESS)',
+                        default="")
+
     # True by default as seeks largest english userbase is Australia & NZ
     parser.add_argument('--australian_language', 
                         type=int,
